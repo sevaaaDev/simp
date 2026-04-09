@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <ncurses.h>
 #include "simp_backend.h"
 
@@ -39,14 +40,21 @@ render_text(int y, int x, int height, int width, const char *text, int text_len)
     }
 }
 
+
+#define SIMP_VERSION "0.1.0b"
 int
 main(int argc, char **argv)
 {
     int ret = 0;
     if (argc == 1) {
         fprintf(stderr, "%s: need music filename as argument\n", argv[0]);
-        fprintf(stderr, "USAGE:\n\t%s FILENAME\n", argv[0]);
+        fprintf(stderr, "USAGE:\n\t%s FILENAME\n\t%s OPTION\nOPTION:\n\t-v, --version\n", argv[0], argv[0]);
         return 1;
+    }
+    if (strcmp(argv[1], "--version") == 0 || 
+        strcmp(argv[1], "-v") == 0) {
+        printf("simp - simple music player v%s\n", SIMP_VERSION);
+        return 0;
     }
     if (!simp_init()) {
         fprintf(stderr, "%s: error initialising backend\n", argv[0]);
