@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ncurses.h>
+#include <math.h> // for fmod
 #include "simp_backend.h"
 
 // TODO: is it the time to make progress_bar struct?
@@ -10,12 +11,30 @@ render_progress_bar(const char *artist,
                     const char *title,
                     float total_len, float timestamp, const char *state)
 {
-    int y = 0, x = 0;
-    // TODO: figure out right aligned text for the timestamp
+    int y = 0, x = 0, width = COLS;
+
+    int total_minute = total_len / 60.f;
+    int total_second = fmod(total_len, 60.f);
+    int current_minute = timestamp / 60.f;
+    int current_second = fmod(timestamp, 60.f);
+    int n = snprintf(NULL, 0, "%02d:%02d / %02d:%02d", 
+                    current_minute, 
+                    current_second, 
+                    total_minute, 
+                    total_second);
+    char buf[n+1] = {};
+    snprintf(buf, n+1, "%02d:%02d / %02d:%02d", 
+                    current_minute, 
+                    current_second, 
+                    total_minute, 
+                    total_second);
+    int x_start_timestamp = width - n;
+    mvprintw(y, x_start_timestamp, "%s", buf);
+
+    // BUG: this can overflow the width
     mvprintw(y, x, "%s: %s - %s - %s", state, artist, album, title);
 
-    // TODO: make COLS injected
-    int progress_char_len = timestamp / total_len * COLS;
+    int progress_char_len = timestamp / total_len * width;
     attron(A_REVERSE);
     mvprintw(y+1, x, "%*s", progress_char_len, " ");
     attroff(A_REVERSE);
