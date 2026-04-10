@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <ncurses.h>
+#include <wchar.h>
+#include <locale.h>
 #include <math.h> // for fmod
 #include "simp_backend.h"
+
+#define SIMP_VERSION "0.1.2b"
+
+void render_text(int y, int x, int height, int width, const char *text, int text_len);
 
 // TODO: is it the time to make progress_bar struct?
 void
@@ -31,8 +37,11 @@ render_progress_bar(const char *artist,
     int x_start_timestamp = width - n;
     mvprintw(y, x_start_timestamp, "%s", buf);
 
-    // BUG: this can overflow the width
-    mvprintw(y, x, "%s: %s - %s - %s", state, artist, album, title);
+    // NOTE: this is refactor candidate
+    n = snprintf(NULL, 0, "%s: %s - %s - %s", state, artist, album, title);
+    char music_info[n+1] = {};
+    snprintf(music_info, n+1, "%s: %s - %s - %s", state, artist, album, title);
+    render_text(y, x, 1, x_start_timestamp-1, music_info, n);
 
     int progress_char_len = timestamp / total_len * width;
     attron(A_REVERSE);
@@ -53,6 +62,7 @@ render_text(int y, int x, int height, int width, const char *text, int text_len)
             x_offset = 0;
             y_offset++;
             if (y_offset >= height) {
+                mvaddstr(y+height-1, x+width-1, "…");
                 break;
             }
         }
@@ -60,7 +70,6 @@ render_text(int y, int x, int height, int width, const char *text, int text_len)
 }
 
 
-#define SIMP_VERSION "0.1.0b"
 int
 main(int argc, char **argv)
 {
@@ -85,6 +94,7 @@ main(int argc, char **argv)
         ret = 2;
         goto uninit_simp;
     }
+    setlocale(LC_ALL, "");
     /////////////////
     // TUI SECTION //
     /////////////////
@@ -98,6 +108,7 @@ main(int argc, char **argv)
     int tick = 0;
     bool should_render = true;
     while (true) {
+        // TODO: this loop is looping per 100ms, is that okay?
         int c = getch();
         if (c == 'q') {
             break;
@@ -113,6 +124,7 @@ main(int argc, char **argv)
             break;
         }
 
+        // BUG: the state rendered will stay PLAYING: after music end
         if (simp_music_is_playing(music)) tick++;
         if (c > -1) should_render = true;
         if (tick >= 10) {
@@ -132,10 +144,9 @@ main(int argc, char **argv)
                                 simp_music_title(music),
                                 total_len, timestamp,
                                 simp_music_is_playing(music) ? "Playing" : "Paused");
-            // TODO: make music list functional
             #define string(str) str, sizeof(str) - 1
             render_text(2, 0, 1, COLS, string("Pause/Play: p | Quit: q"));
-            // render_text(2, 0, 1, COLS, "p: toggle pause/play, q: quit", 24);
+            // TODO: make music list functional
             // render_text(2, 0, 1, COLS, "Men I Trust - Days Go By", 24);
             // render_text(3, 0, 1, COLS, "Men I Trust - Oncle Jazz", 24);
             // render_text(4, 0, 1, COLS, "Girl Scout - Honey", 18);
