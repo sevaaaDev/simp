@@ -133,9 +133,12 @@ main(int argc, char **argv)
                                 total_len, timestamp,
                                 simp_music_is_playing(music) ? "Playing" : "Paused");
             // TODO: make music list functional
-            render_text(2, 0, 1, COLS, "Men I Trust - Days Go By", 24);
-            render_text(3, 0, 1, COLS, "Men I Trust - Oncle Jazz", 24);
-            render_text(4, 0, 1, COLS, "Girl Scout - Honey", 18);
+            #define string(str) str, sizeof(str) - 1
+            render_text(2, 0, 1, COLS, string("Pause/Play: p | Quit: q"));
+            // render_text(2, 0, 1, COLS, "p: toggle pause/play, q: quit", 24);
+            // render_text(2, 0, 1, COLS, "Men I Trust - Days Go By", 24);
+            // render_text(3, 0, 1, COLS, "Men I Trust - Oncle Jazz", 24);
+            // render_text(4, 0, 1, COLS, "Girl Scout - Honey", 18);
         }
     }
 
