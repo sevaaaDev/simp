@@ -35,6 +35,7 @@
  *  :bar
  * */
 
+// BUG: i think this isnt how opaque works
 typedef struct simp_music * Simp_Music;
 
 typedef enum {

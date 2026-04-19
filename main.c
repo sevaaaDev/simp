@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include <ncurses.h>
-#include <wchar.h>
-#include <locale.h>
-#include <math.h> // for fmod
+#include <dirent.h>
+
 #include "simp_backend.h"
 #include "tui.h"
 
@@ -27,21 +25,47 @@ main(int argc, char **argv)
         fprintf(stderr, "%s: error initialising backend\n", argv[0]);
         return 2;
     }
-    Simp_Music music = simp_music_new(argv[1]);
-    if (!music) {
-        fprintf(stderr, "%s: error initialising music from file '%s'\n", argv[0], argv[1]);
-        ret = 2;
-        goto uninit_simp;
+    // TODO: if argv[1] == directory, we read the dir (no recursion)
+    // Simp_Music music = simp_music_new(argv[1]);
+    // if (!music) {
+    //     fprintf(stderr, "%s: error initialising music from file '%s'\n", argv[0], argv[1]);
+    //     ret = 2;
+    //     goto uninit_simp;
+    // }
+
+    DIR *dir = opendir(argv[1]);
+    struct dirent *ent;
+    int i = 0;
+    errno = 0;
+    while ((ent = readdir(dir)) != NULL) {
+        if (i > 1) {
+            // TODO: store the filename if its mp3, also store the metadata
+            // this mean we need to change the Simp_Music struct
+            // {
+            //     char *filename;
+            //     struct {
+                //     
+            //     } metadata;
+            //     ma_sound music_data;
+            // };
+            printf("%s\n", ent->d_name);
+        }
+        i++;
+        errno = 0;
     }
-    setlocale(LC_ALL, "");
+    if (errno != 0) {
+        fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
+        goto uninit_simp;
+    } 
+
     /////////////////
     // TUI SECTION //
     /////////////////
 
-    endwin();
 
-    simp_music_destroy(music);
+    // simp_music_destroy(music);
 uninit_simp:
+    closedir(dir);
     simp_uninit();
     return ret;
 }
