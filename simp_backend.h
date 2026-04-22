@@ -35,8 +35,7 @@
  *  :bar
  * */
 
-// BUG: i think this isnt how opaque works
-typedef struct simp_music * Simp_Music;
+typedef struct simp_music Simp_Music;
 
 typedef enum {
     SIMP_SUCCESS,
@@ -46,16 +45,23 @@ typedef enum {
 
 bool             simp_init();
 void             simp_uninit();
-Simp_Music       simp_music_new(char *name);
-void             simp_music_destroy(Simp_Music music);
-const char *     simp_music_title(Simp_Music music);
-const char *     simp_music_artist(Simp_Music music);
-const char *     simp_music_album(Simp_Music music);
-bool             simp_music_is_playing(Simp_Music music);
-Simp_Result      simp_music_play(Simp_Music music);
-Simp_Result      simp_music_pause(Simp_Music music);
-Simp_Result      simp_music_get_length(Simp_Music music, float *out_second);
-Simp_Result      simp_music_get_timestamp(Simp_Music music, float *out_second);
-Simp_Result      simp_music_set_timestamp(Simp_Music music, float second);
+Simp_Music *     simp_music_new(char *filename);
+void             simp_music_destroy(Simp_Music *music);
+const char *     simp_music_title(Simp_Music *music);
+const char *     simp_music_artist(Simp_Music *music);
+const char *     simp_music_album(Simp_Music *music);
+bool             simp_music_is_playing(Simp_Music *music);
+Simp_Result      simp_music_play(Simp_Music *music);
+Simp_Result      simp_music_pause(Simp_Music *music);
+Simp_Result      simp_music_get_length(Simp_Music *music, float *out_second);
+Simp_Result      simp_music_get_timestamp(Simp_Music *music, float *out_second);
+Simp_Result      simp_music_set_timestamp(Simp_Music *music, float second);
+
+typedef struct simp_player Simp_Player;
+
+bool simp_player_set_music(Simp_Player *player, Simp_Music *new_music);
+bool simp_player_set_music_from_file(Simp_Player *player, char *filename);
+void simp_player_new(Simp_Player *player);
+void simp_player_destroy(Simp_Player *player);
 
 #endif

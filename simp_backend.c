@@ -35,7 +35,7 @@ simp_uninit()
 }
 
 void
-simp_music_destroy(Simp_Music music) 
+simp_music_destroy(Simp_Music *music) 
 {
     free(music->filename);
     ma_sound_uninit(music->sound);
@@ -43,10 +43,10 @@ simp_music_destroy(Simp_Music music)
     free(music);
 }
 
-Simp_Music 
+Simp_Music *
 simp_music_new(char *filename) 
 {
-    Simp_Music music = malloc(sizeof(struct simp_music));
+    Simp_Music *music = malloc(sizeof(struct simp_music));
     music->filename = strdup(filename);
     music->sound = malloc(sizeof(ma_sound));
     ma_result result = ma_sound_init_from_file(&simp_gEngine, music->filename, 0, NULL, NULL, music->sound);
@@ -68,7 +68,7 @@ simp_music_new(char *filename)
 }
 
 Simp_Result 
-simp_music_play(Simp_Music music) 
+simp_music_play(Simp_Music *music) 
 {
     if (!music) return SIMP_INVALID_ARGS;
     if (ma_sound_start(music->sound) != MA_SUCCESS)
@@ -77,7 +77,7 @@ simp_music_play(Simp_Music music)
 } 
 
 Simp_Result
-simp_music_pause(Simp_Music music)
+simp_music_pause(Simp_Music *music)
 {
     if (!music) return SIMP_INVALID_ARGS;
     if (ma_sound_stop(music->sound) != MA_SUCCESS)
@@ -86,7 +86,7 @@ simp_music_pause(Simp_Music music)
 }
 
 Simp_Result
-simp_music_get_length(Simp_Music music, float *out_second) 
+simp_music_get_length(Simp_Music *music, float *out_second) 
 {
     if (!music || !out_second) return SIMP_INVALID_ARGS;
     *out_second = music->length_in_second;
@@ -94,7 +94,7 @@ simp_music_get_length(Simp_Music music, float *out_second)
 } 
 
 Simp_Result
-simp_music_get_timestamp(Simp_Music music, float *out_second) 
+simp_music_get_timestamp(Simp_Music *music, float *out_second) 
 {
     if (!music || !out_second) return SIMP_INVALID_ARGS;
     ma_result result = ma_sound_get_cursor_in_seconds(music->sound, out_second);
@@ -108,7 +108,7 @@ simp_music_get_timestamp(Simp_Music music, float *out_second)
 }
 
 Simp_Result
-simp_music_set_timestamp(Simp_Music music, float second)
+simp_music_set_timestamp(Simp_Music *music, float second)
 {
     if (!music) return SIMP_INVALID_ARGS;
     ma_result result = ma_sound_seek_to_second(music->sound, second);
@@ -122,7 +122,7 @@ simp_music_set_timestamp(Simp_Music music, float second)
 }
 
 const char *
-simp_music_title(Simp_Music music)
+simp_music_title(Simp_Music *music)
 {
     if (!music->has_tags) return "Undefined";
     if (strlen(music->tags.title) == 0) return "Undefined";
@@ -130,7 +130,7 @@ simp_music_title(Simp_Music music)
 }
 
 const char *
-simp_music_artist(Simp_Music music)
+simp_music_artist(Simp_Music *music)
 {
     if (!music->has_tags) return "Undefined";
     if (strlen(music->tags.artist) == 0) return "Undefined";
@@ -138,7 +138,7 @@ simp_music_artist(Simp_Music music)
 }
 
 const char *
-simp_music_album(Simp_Music music)
+simp_music_album(Simp_Music *music)
 {
     if (!music->has_tags) return "Undefined";
     if (strlen(music->tags.album) == 0) return "Undefined";
@@ -146,8 +146,47 @@ simp_music_album(Simp_Music music)
 }
 
 bool
-simp_music_is_playing(Simp_Music music) 
+simp_music_is_playing(Simp_Music *music) 
 {
     if (!music) return false;
     return ma_sound_is_playing(music->sound);
+}
+
+struct simp_player {
+    Simp_Music *current_music;
+};
+
+bool 
+simp_player_set_music(Simp_Player *player, Simp_Music *new_music)
+{
+    if (!player || !new_music) return false;
+    if (player->current_music) {
+        simp_destroy_music(player->current_music);
+    }
+    player->current_music = new_music;
+    return true;
+}
+
+bool 
+simp_player_set_music_from_file(Simp_Player *player, char *filename)
+{
+    if (!player || !filename) return false;
+    Simp_Music *music = simp_music_new(filename);
+    if (!music) {
+        return false;
+    }
+    return simp_player_set_music(player, music);
+}
+
+void
+simp_player_new(Simp_Player *player) {
+    player->current_music = NULL;
+}
+
+void
+simp_player_destroy(Simp_Player *player)
+{
+    if (player->current_music) {
+        simp_destroy_music(player->current_music);
+    }
 }
