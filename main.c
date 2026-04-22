@@ -1,11 +1,42 @@
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #include "simp_backend.h"
 #include "tui.h"
 
 #define SIMP_VERSION "0.1.2b"
+
+// these macros are from https://github.com/tsoding/nob.h, with some modification by me
+#define DA_INIT_CAP 8
+#define da_reserve(da, expected_capacity)                                              \
+    do {                                                                                   \
+        if ((expected_capacity) > (da)->capacity) {                                        \
+            if ((da)->capacity == 0) {                                                     \
+                (da)->capacity = DA_INIT_CAP;                                          \
+            }                                                                              \
+            while ((expected_capacity) > (da)->capacity) {                                 \
+                (da)->capacity *= 2;                                                       \
+            }                                                                              \
+            (da)->items = realloc((da)->items, (da)->capacity * sizeof(*(da)->items)); \
+        }                                                                                  \
+    } while (0)
+
+#define da_append(da, item)                \
+    do {                                       \
+        da_reserve((da), (da)->count + 1); \
+        (da)->items[(da)->count++] = (item);   \
+    } while (0)
+
+struct Music_Entries {
+    size_t capacity;
+    size_t count;
+    char **items;
+};
+
+bool read_dir_for_mp3(struct Music_Entries *entries, char *dirname);
 
 int
 main(int argc, char **argv)
@@ -33,30 +64,12 @@ main(int argc, char **argv)
     //     goto uninit_simp;
     // }
 
-    DIR *dir = opendir(argv[1]);
-    struct dirent *ent;
-    int i = 0;
-    errno = 0;
-    while ((ent = readdir(dir)) != NULL) {
-        if (i > 1) {
-            // TODO: store the filename if its mp3, also store the metadata
-            // this mean we need to change the Simp_Music struct
-            // {
-            //     char *filename;
-            //     struct {
-                //     
-            //     } metadata;
-            //     ma_sound music_data;
-            // };
-            printf("%s\n", ent->d_name);
-        }
-        i++;
-        errno = 0;
-    }
-    if (errno != 0) {
+    struct Music_Entries entries = {};
+    if (!read_dir_for_mp3(&entries, argv[1])) {
         fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
-        goto uninit_simp;
-    } 
+        return 1;
+    }
+
 
     /////////////////
     // TUI SECTION //
@@ -65,7 +78,39 @@ main(int argc, char **argv)
 
     // simp_music_destroy(music);
 uninit_simp:
-    closedir(dir);
     simp_uninit();
     return ret;
+    // TODO: investigate gdb cannot find bound after return
+}
+
+bool
+read_dir_for_mp3(struct Music_Entries *entries, char *dirname)
+{
+    DIR *dir = opendir(dirname);
+    if (!dir) return false;
+    struct dirent *ent;
+    int i = 0;
+    errno = 0;
+    while ((ent = readdir(dir)) != NULL) {
+        if (i > 1) {
+            // TODO: store the filename if its mp3, also store the metadata
+           // this mean we need to change the Simp_Music struct
+            // {
+            //     char *filename;
+            //     struct {
+                //     
+            //     } metadata;
+            //     ma_sound music_data;
+            // };
+            char *filename = strdup(ent->d_name);
+            da_append(entries, filename);
+        }
+        i++;
+        errno = 0;
+    }
+    closedir(dir);
+    if (errno != 0) {
+        return false;
+    } 
+    return true;
 }
